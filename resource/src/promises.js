@@ -1,0 +1,75 @@
+
+const DEFAULT_TIMEOUT_MS = 5000;
+
+/**
+ * Promise에 타임아웃 기능을 추가합니다.
+ * @param {Promise} promise - 대상 Promise
+ * @param {Function} [timeoutCallback] - 타임아웃 시 실행할 콜백
+ * @param {number} [timeoutMs=5000] - 타임아웃 시간
+ * @returns {Promise}
+ */
+const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
+	var timer;
+	var timeoutPromise = new Promise((timeout_res, timeout_rej) => {
+		timer = setTimeout(() => {
+			if (timeoutCallback && typeof timeoutCallback === "function") timeoutCallback();
+			timeout_rej(new Error(`timeout:::${timeoutMs}`, {cause:{promise, timeoutCallback}}));
+		}, timeoutMs);
+		promise
+			.then(() => {
+				clearTimeout(timer);
+				timeout_res("");
+			})
+			.catch(() => {
+				clearTimeout(timer);
+				timeout_res("");
+			});
+	});
+	return Promise.race([promise, timeoutPromise]);
+}
+
+/**
+ * @deprecated
+*/
+const timeoutPromise2 = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
+	var timeoutPromise = (() => {
+		var start = window.performance.now();
+		return new Promise((res, rej) => {
+			setTimeout(() => {
+				if (window.performance.now() - start > timeoutMs) {
+					if (timeoutCallback && typeof timeoutCallback === "function") timeoutCallback();
+					rej(new Error(`timeout:::${timeoutMs}`, {cause:{promise, timeoutCallback}}));
+				}
+				else res("");
+			}, 0);
+		});
+	})();
+	return timeoutPromise;
+}
+
+/**
+ * 외부에서 resolve/reject를 제어할 수 있는 "Unwrapped" Promise 객체를 생성합니다.
+ * @returns {Object} { promise, resolve, reject, controller }
+ */
+const unwrappedPromise = () => {
+	const unwrapped = {};
+	const abortController = new AbortController();
+	const signal = abortController.signal;
+	var handler;
+	var p = new Promise((resolve, reject) => {
+		handler = () => {
+			reject(new Error("Aborted:::"));
+		};
+		unwrapped.resolve = resolve;
+		unwrapped.reject = reject;
+		signal.addEventListener("abort", handler, { once: true });
+	});
+	unwrapped.promise = p.finally(result => {
+		signal.removeEventListener("abort", handler);
+		return result;
+	});
+	unwrapped.controller = abortController;
+	return unwrapped;
+}
+
+export { DEFAULT_TIMEOUT_MS, timeoutPromise, unwrappedPromise };
