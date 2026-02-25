@@ -10,10 +10,11 @@ const DEFAULT_TIMEOUT_MS = 5000;
  */
 const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
 	var timer;
+	var stack = new Error(`timeout:::${timeoutMs}`);
 	var timeoutPromise = new Promise((timeout_res, timeout_rej) => {
 		timer = setTimeout(() => {
 			if (timeoutCallback && typeof timeoutCallback === "function") timeoutCallback();
-			timeout_rej(new Error(`timeout:::${timeoutMs}`, {cause:{promise, timeoutCallback}}));
+			timeout_rej(stack);
 		}, timeoutMs);
 		promise
 			.then(() => {
@@ -26,25 +27,6 @@ const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS
 			});
 	});
 	return Promise.race([promise, timeoutPromise]);
-}
-
-/**
- * @deprecated
-*/
-const timeoutPromise2 = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
-	var timeoutPromise = (() => {
-		var start = window.performance.now();
-		return new Promise((res, rej) => {
-			setTimeout(() => {
-				if (window.performance.now() - start > timeoutMs) {
-					if (timeoutCallback && typeof timeoutCallback === "function") timeoutCallback();
-					rej(new Error(`timeout:::${timeoutMs}`, {cause:{promise, timeoutCallback}}));
-				}
-				else res("");
-			}, 0);
-		});
-	})();
-	return timeoutPromise;
 }
 
 /**
