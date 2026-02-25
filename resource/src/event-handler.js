@@ -45,6 +45,11 @@ class DefaultEventHandler extends EventHandler {
 		this._handlers = {};
 	}
 
+	static create () {
+		var jobQueue = new JobQueue();
+		return new DefaultEventHandler(jobQueue);
+	}
+
 	/**
 	 * 이벤트 발생 시 처리할 수 있도록 이벤트 핸들러를 등록합니다.
 	 * @param {string} eventName
@@ -92,3 +97,4 @@ class DefaultEventHandler extends EventHandler {
 	}
 }
 
+export { EventHandler, DefaultEventHandler };

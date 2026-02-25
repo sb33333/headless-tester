@@ -4,7 +4,7 @@
  * @link https://chromedevtools.github.io/devtools-protocol/
  * Chrome Devtools Protocol 세션을 관리하는 모듈입니다.
 */
-import { EventJobQueue } from "./job-queue.js";
+import * as EventHandlers from "./event-handler.js";
 import * as Promises from "./promises.js";
 
 /**
@@ -49,7 +49,7 @@ export default class CdpSession {
 		this._ws = null;
 		this._sequence = 0;
 		this._requests = new Map();
-		this._eventJobQueue = new EventJobQueue();
+		this._eventHandler = EventHandlers.DefaultEventHandler.create();
 	}
 
 	/**
@@ -66,7 +66,7 @@ export default class CdpSession {
 			resolve,
 			reject
 		};
-		trhis._requests.set(id, pendingRequest);
+		this._requests.set(id, pendingRequest);
 		return Promises.timeoutPromise(promise, () => this._requests.delete(id), timeoutMs);
 	}
 
@@ -134,7 +134,7 @@ export default class CdpSession {
 						}
 					`
 				});
-				that._evantJobQueue.subscribe(
+				that._eventHandler.subscribe(
 					"Page.frameNavigated",
 					() => {
 						// Page.frameNavigated 될 때 binding 실행
@@ -142,7 +142,7 @@ export default class CdpSession {
 						return true;
 					}
 				);
-				that._eventJobQueue.subscribe(
+				that._eventHandler.subscribe(
 					"Page.javascriptDialogOpening",
 					(params) => {
 						// javascript 대화상자가 열렸을 때 실행
@@ -162,7 +162,7 @@ export default class CdpSession {
 				if (id !== undefined && id !== null) {
 					that._resolveRequest(data);
 				} else {
-					await that._eventJobQueue.handle(data);
+					await that._eventHandler.handle(data);
 				}
 			}
 		});
@@ -218,6 +218,6 @@ export default class CdpSession {
 		return this._addRequest(payload);
 	}
 	addEventHandler (eventName, handlerFunction, condition) {
-		return this._eventJobQueue.subscribe(eventName, handlerFunction, condition);
+		return this._eventHandler.subscribe(eventName, handlerFunction, condition);
 	}
 }
