@@ -2,19 +2,20 @@ import CdpSession from "./chrome-devtools-protocol-session.js";
 import * as Promises from "./promises.js";
 
 /**
- * Headless 브라우저 테스팅을 위한 래퍼 클래스
- */
+* Headless 브라우저 테스팅을 위한 래퍼 클래스
+*/
 class HeadlessTester {
 	/**
 	 * @constructor
 	 * @param {CdpSession} cdpSession
 	 * @param {string} hostName
-	 */
-	constructor(cdpSEssion, hostName, protocol) {
+	 * @param {string} protocol
+	*/
+	constructor(cdpSession, hostName, protocol) {
 
-    if (cdpSession === undefined || cdpSession === null || !CdpSession.prototype.isPrototypeOf(cdpSession)) {
-        throw new Error("[IllegalArgument] arg[0] should be subtype of CdpSession.", {cause: cdpSession});
-    }
+		if (cdpSession === undefined || cdpSession === null || !CdpSession.prototype.isPrototypeOf(cdpSession)) {
+			throw new Error("[IllegalArgument] arg[0] should be subtype of CdpSession.", {cause: cdpSession});
+		}
 		this._session = cdpSession;
 		if (hostName.endsWith("/")) {
 			hostName = hostName.substring(0, hostName.length - 1);
@@ -28,9 +29,9 @@ class HeadlessTester {
 			this._protocol = protocol;
 		}
 
-    if (!this._hostName || !this._protocol) {
-        throw new Error("[IllegalArgument] hostName and protocol is required.", {cause: {hostName, protocol}});
-    };
+		if (!this._hostName || !this._protocol) {
+			throw new Error("[IllegalArgument] hostName and protocol is required.", {cause: {hostName, protocol}});
+		};
 	}
 
 	/**
@@ -38,10 +39,10 @@ class HeadlessTester {
 	 * @param {string} cdpWebSocketUrl - CDP WebSocket URL
 	 * @param {string} hostName - 대상 호스트
 	 * @returns {Promise<HeadlessTester>}
-	 */
+	*/
 	static async create (cdpWebSocketUrl, hostName) {
-    var session = new CdpSession(cdpWebSocketUrl);
-    await session.open();
+		var session = new CdpSession(cdpWebSocketUrl);
+		await session.open();
 		return new HeadlessTester(session, hostName);
 	}
 
@@ -50,7 +51,7 @@ class HeadlessTester {
 	 * @private
 	 * @param {string} [resourcePath=""]
 	 * @returns {string} 완성된 URL
-	 */
+	*/
 	_constructUrl (resourcePath = "") {
 		if (resourcePath.includes("://")) {
 			return resourcePath;
@@ -58,13 +59,11 @@ class HeadlessTester {
 		return this._protocol+"://" + this._hostName+(resourcePath.startsWith("/")? resourcePath:"/"+resourcePath);
 	}
 
-
-
 	/**
 	 * 특정 URL로 페이지를 이동하고 로드가 완료될 때까지 기다립니다.
 	 * @param {string} url - 이동할 경로 또는 URL
 	 * @returns {Promise<void>}
-	 */
+	*/
 	navigate (url) {
 		url = this._constructUrl(url);
 		this._session.sendMessage("Page.navigate", {url});
@@ -102,7 +101,7 @@ class HeadlessTester {
 	 * @param {string|string[]} eventNames - 감시할 이벤트 명 또는 배열
 	 * @param {number} [timeoutMs] - 제한 시간
 	 * @returns {Promise<any[]>} 이벤트 결과 배열
-	 */
+	*/
 	waitForEvent(eventNames, timeoutMs) {
 		var _events = (Array.isArray(eventNames)? eventNames: [eventNames]);
 		var listeners = _events
@@ -130,7 +129,7 @@ class HeadlessTester {
 	 * 브라우저 컨텍스트 내에서 스크립트를 실행합니다.
 	 * @param {...(string|Function)} script - 실행할 스크립트 문자열 또는 함수
 	 * @returns {Promise<Object>} 실행 결과
-	 */
+	*/
 	evaluate(...script) {
 		var concat = script.map(s => {
 			var str = (typeof s ==="function")?s.toString():s;
@@ -143,7 +142,7 @@ class HeadlessTester {
 	 * 도메인을 활성화/비활성화합니다.
 	 * @param {string} domainName
 	 * @param {boolean} bool
-	 */
+	*/
 	enableDomain (domainName, bool) {
 		return this._session.enableDomain(domainName, bool);
 	}

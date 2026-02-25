@@ -1,4 +1,4 @@
-/** 
+/**
  * JobQueue 에 담길 작업 단위
  * @class
  * @property {string} type 작업 유형
@@ -22,24 +22,24 @@ class Job {
  * 작업을 순서대로 처리하기 위한 queue.
  * @class
  * @abstract
- * 
+ *
 */
 class JobQueue {
 	/**
- * JobQueue에서 처리할 수 있는 작업 유형을 반환.
- * @abstract
- * @returns {Object} 작업 유형을 property로 갖는 object 반환
-*/
-get type () {
+	 * JobQueue에서 처리할 수 있는 작업 유형을 반환.
+	 * @abstract
+	 * @returns {Object} 작업 유형을 property로 갖는 object 반환
+	*/
+	get type () {
 		throw new Error("Not implemented");
 	}
 	static get THRESHOLD () {
 		return 1000;
 	}
 
-/**
- * @constructor
-*/
+	/**
+	 * @constructor
+	*/
 	constructor() {
 		this._handlers = {};
 		this._queue = [];
@@ -50,14 +50,14 @@ get type () {
 	 * 하위 클래스에서 구현해야 할 실제 작업 실행 로직
 	 * @abstract
 	 * @param {Job} job
-	 */
+	*/
 	async _executeJob (job) {
 		throw new Error("Not implemented::_executeJob");
 	}
 
 	/**
 	 * 큐에 여유 공간이 생길 때까지 대기
-	 */
+	*/
 	_waitForSpace () {
 		return new Promise(resolve => {
 			const check = () => {
@@ -72,7 +72,7 @@ get type () {
 	 * 작업을 큐에 추가
 	 * @param {string} type - 작업 유형
 	 * @param {Object} payload - 작업에 대한 데이터
-	 */
+	*/
 	async enqueue (type, payload) {
 		if (this._queue.length > JobQueue.THRESHOLD) {
 			await this._waitForSpace();
@@ -97,7 +97,7 @@ get type () {
 		}
 	}
 
-	
+
 
 }
 
@@ -105,7 +105,7 @@ get type () {
 /**
  * EventJobQueue에서 처리하는 작업 유형
  * @enum {string}
- */
+*/
 const EventJobType = Object.freeze({
 	SUBSCRIBE: "SUBSCRIBE",
 	UNSUBSCRIBE: "UNSUBSCRIBE",
@@ -118,9 +118,9 @@ const EventJobType = Object.freeze({
  * @extends
 */
 class EventJobQueue extends JobQueue {
-    get type () {
-        return EventJobType;
-    }
+	get type () {
+		return EventJobType;
+	}
 	async _executeJob (job) {
 		const { type, payload } = job;
 		switch (type) {
@@ -154,13 +154,13 @@ class EventJobQueue extends JobQueue {
 		}
 	}
 
-/**
+	/**
 	 * 이벤트 구독을 등록합니다.
 	 * @param {string} eventName
 	 * @param {Function} handlerFunction
 	 * @param {Function} [condition] - 처리 조건 함수
 	 * @returns {Promise<Function>} 구독 해제(unsubscribe) 함수
-	 */
+	*/
 	async subscribe (eventName, handlerFunction, condition = () => true) {
 		const handler = {
 			handle: (params) => handlerFunction(params),
