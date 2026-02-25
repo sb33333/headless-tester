@@ -1,4 +1,4 @@
-import openSession from "./chrome-devtools-protocol-session.js";
+import CdpSession from "./chrome-devtools-protocol-session.js";
 import * as Promises from "./promises.js";
 
 /**
@@ -7,26 +7,42 @@ import * as Promises from "./promises.js";
 class HeadlessTester {
 	/**
 	 * @constructor
-	 * @param {ChromeDevtoolsProtocolSession} chromeDevtoolsProtocolSession
+	 * @param {CdpSession} cdpSession
 	 * @param {string} hostName
 	 */
-	constructor(chromeDevtoolsProtocolSession, hostName) {
-		this._session = chromeDevtoolsProtocolSession;
+	constructor(cdpSEssion, hostName, protocol) {
+
+    if (cdpSession === undefined || cdpSession === null || !CdpSession.prototype.isPrototypeOf(cdpSession)) {
+        throw new Error("[IllegalArgument] arg[0] should be subtype of CdpSession.", {cause: cdpSession});
+    }
+		this._session = cdpSession;
 		if (hostName.endsWith("/")) {
 			hostName = hostName.substring(0, hostName.length - 1);
 		}
 		if (hostName.includes("://")) {
-			var [protocol, host] = hostName.split("://");
-			this._hostName = host;
-			this._protocol=protocol;
+			var [protocol_split, host_split] = hostName.split("://");
+			this._hostName = host_split;
+			this._protocol=protocol_split;
 		} else {
 			this._hostName = hostName;
-			if(hostName.includes("localhost")) {
-				this._protocol = "http";
-			} else {
-				this._protocol="https";
-			}
+			this._protocol = protocol;
 		}
+
+    if (!this._hostName || !this._protocol) {
+        throw new Error("[IllegalArgument] hostName and protocol is required.", {cause: {hostName, protocol}});
+    };
+	}
+
+	/**
+	 * 새로운 HeadlessTester 인스턴스를 생성하는 팩토리 메서드
+	 * @param {string} cdpWebSocketUrl - CDP WebSocket URL
+	 * @param {string} hostName - 대상 호스트
+	 * @returns {Promise<HeadlessTester>}
+	 */
+	static async create (cdpWebSocketUrl, hostName) {
+    var session = new CdpSession(cdpWebSocketUrl);
+    await session.open();
+		return new HeadlessTester(session, hostName);
 	}
 
 	/**
@@ -42,16 +58,7 @@ class HeadlessTester {
 		return this._protocol+"://" + this._hostName+(resourcePath.startsWith("/")? resourcePath:"/"+resourcePath);
 	}
 
-	/**
-	 * 새로운 HeadlessTester 인스턴스를 생성하는 팩토리 메서드
-	 * @param {string} cdpWebSocketUrl - CDP WebSocket URL
-	 * @param {string} hostName - 대상 호스트
-	 * @returns {Promise<HeadlessTester>}
-	 */
-	static async create (cdpWebSocketUrl, hostName) {
-		var session = await openSession(cdpWebSocketUrl);
-		return new HeadlessTester(session, hostName);
-	}
+
 
 	/**
 	 * 특정 URL로 페이지를 이동하고 로드가 완료될 때까지 기다립니다.
