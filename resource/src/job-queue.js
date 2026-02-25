@@ -1,14 +1,9 @@
-/**
- * JobQueue 작업 유형
- * @enum {string}
- */
-const JobType = {
-	SUBSCRIBE: "SUBSCRIBE",
-	UNSUBSCRIBE: "UNSUBSCRIBE",
-	HANDLE: "HANDLE",
-}
-
-/** JobQueue 에 담길 작업 단위 */
+/** 
+ * JobQueue 에 담길 작업 단위
+ * @class
+ * @property {string} type 작업 유형
+ * @property {*} payload 작업 데이터
+*/
 class Job {
 	constructor(type, payload) {
 		this._type = type;
@@ -23,13 +18,28 @@ class Job {
 	}
 }
 
+/**
+ * 작업을 순서대로 처리하기 위한 queue.
+ * @class
+ * @abstract
+ * 
+*/
 class JobQueue {
-	static get TYPE () {
-		return JobType;
+	/**
+ * JobQueue에서 처리할 수 있는 작업 유형을 반환.
+ * @abstract
+ * @returns {Object} 작업 유형을 property로 갖는 object 반환
+*/
+get type () {
+		throw new Error("Not implemented");
 	}
 	static get THRESHOLD () {
 		return 1000;
 	}
+
+/**
+ * @constructor
+*/
 	constructor() {
 		this._handlers = {};
 		this._queue = [];
@@ -63,7 +73,7 @@ class JobQueue {
 	 * @param {string} type - 작업 유형
 	 * @param {Object} payload - 작업에 대한 데이터
 	 */
-	async _enqueue (type, payload) {
+	async enqueue (type, payload) {
 		if (this._queue.length > JobQueue.THRESHOLD) {
 			await this._waitForSpace();
 		}
@@ -87,52 +97,47 @@ class JobQueue {
 		}
 	}
 
-	/**
-	 * 이벤트 구독을 등록합니다.
-	 * @param {string} eventName
-	 * @param {Function} handlerFunction
-	 * @param {Function} [condition] - 처리 조건 함수
-	 * @returns {Promise<Function>} 구독 해제(unsubscribe) 함수
-	 */
-	async subscribe (eventName, handlerFunction, condition = () => true) {
-		const handler = {
-			handle: (params) => handlerFunction(params),
-			condition: (params) => condition(params),
-		};
-		await this._enqueue(JobQueue.TYPE.SUBSCRIBE, { eventName, handler });
-		return () => {
-			this._enqueue(JobQueue.TYPE.UNSUBSCRIBE, { eventName, handler });
-		}
-	}
+	
 
-	/** 수신된 데이터를 큐에 넣고 핸들링 */
-	async handle(data) {
-		await this._enqueue(JobQueue.TYPE.HANDLE, data);
-	}
 }
+
+
+/**
+ * EventJobQueue에서 처리하는 작업 유형
+ * @enum {string}
+ */
+const EventJobType = Object.freeze({
+	SUBSCRIBE: "SUBSCRIBE",
+	UNSUBSCRIBE: "UNSUBSCRIBE",
+	HANDLE: "HANDLE",
+});
+
 
 /**
  * CDP 이벤트를 처리하기 위한 큐
+ * @extends
 */
 class EventJobQueue extends JobQueue {
-
+    get type () {
+        return EventJobType;
+    }
 	async _executeJob (job) {
 		const { type, payload } = job;
 		switch (type) {
-			case JobQueue.TYPE.SUBSCRIBE: {
+			case this.type.SUBSCRIBE: {
 				const { eventName, handler } = payload;
 				if (!this._handlers[eventName]) this._handlers[eventName] = [];
 				this._handlers[eventName].push(handler);
 				break;
 			}
-			case JobQueue.TYPE.UNSUBSCRIBE: {
+			case this.type.UNSUBSCRIBE: {
 				const { eventName, handler } = payload;
 				if (this._handlers[eventName]) {
 					this._handlers[eventName] = this._handlers[eventName].filter(h => h !== handler);
 				}
 				break;
 			}
-			case JobQueue.TYPE.HANDLE: {
+			case this.type.HANDLE: {
 				const { method, params } = payload;
 				const targetHandlers = this._handlers[method];
 				if (!targetHandlers || targetHandlers.length === 0) break;
@@ -148,6 +153,30 @@ class EventJobQueue extends JobQueue {
 			}
 		}
 	}
+
+/**
+	 * 이벤트 구독을 등록합니다.
+	 * @param {string} eventName
+	 * @param {Function} handlerFunction
+	 * @param {Function} [condition] - 처리 조건 함수
+	 * @returns {Promise<Function>} 구독 해제(unsubscribe) 함수
+	 */
+	async subscribe (eventName, handlerFunction, condition = () => true) {
+		const handler = {
+			handle: (params) => handlerFunction(params),
+			condition: (params) => condition(params),
+		};
+		await this.enqueue(JobQueue.TYPE.SUBSCRIBE, { eventName, handler });
+		return () => {
+			this.enqueue(JobQueue.TYPE.UNSUBSCRIBE, { eventName, handler });
+		}
+	}
+
+	/** 수신된 데이터를 큐에 넣고 핸들링 */
+	async handle(data) {
+		await this.enqueue(JobQueue.TYPE.HANDLE, data);
+	}
+
 }
 
 export {JobQueue, EventJobQueue};
