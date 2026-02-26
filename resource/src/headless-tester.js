@@ -127,16 +127,80 @@ class HeadlessTester {
 
 	/**
 	 * 브라우저 컨텍스트 내에서 스크립트를 실행합니다.
-	 * @param {...(string|Function)} script - 실행할 스크립트 문자열 또는 함수
+	 * @param {string|Function} script - 실행할 스크립트 문자열 또는 함수
+	 * @param {boolean} awaitPromise - 실행할 스크립트가 promise인 경우 결과 대기 여부
 	 * @returns {Promise<Object>} 실행 결과
 	*/
-	evaluate(...script) {
-		var concat = script.map(s => {
-			var str = (typeof s ==="function")?s.toString():s;
-			return (str.endsWith(";")) ? str : str + ";";
-		}).join("\n");
-		return this._session.sendMessage("Runtime.evaluate", {expression:concat});
+	evaluate(script, awaitPromise) {
+		script = (typeof script === "function") ? `(${script.toString()})()` : `${script}`;
+		script = `{\n${script}\n}`;
+		return this._session.sendMessage(
+			"Runtime.evaluate",
+			{
+				expression: script,
+				awaitPromise: (awaitPromise === true)
+			}
+		);
 	}
+
+	evaluateWithBinding (script) {
+		var bindingId = crypto.randomUUID();
+		script = (typeof script === "function")
+			? `
+				bindingResponse.result = await (${script.toString()})(__bindingId, __binding);
+				__binding(JSON.stringify(bindingResponse));
+			`
+			: `
+				${script}
+				__binding(JSON.stringify(bindingResponse));
+			`
+		;
+		this.evaluate(`(async () => {
+			const __bindingId = "${bindingId}";
+			const __bindingName = "${this._session.bindingName}";
+			const __binding = globalThis[__bindingName];
+			var bindingResponse = { bindingId: __bindingId };
+			try {
+				${script};
+			} catch (err) {
+				bindingResponse.error = err.stack
+				__binding(JSON.stringify(bindingResponse));
+			}
+			return __bindingId;
+		})()`);
+
+		var {resolve, reject, promise} = Promises.unwrappedPromise();
+		var unsubscribePromise = this._session.addEventHandler(
+			"Runtime.bindingCalled",
+			params => {
+				var parsedPayload = JSON.parse(params.payload);
+				// console.log("parsedPayload:::", parsedPayload); // debugging
+				if (parsedPayload.error) {
+					reject (new Error(parsedPayload.error));
+				} else {
+					resolve(parsedPayload);
+				}
+				return false;	// single use handler
+			},
+			params => {
+				try {
+					var parsedPayload = JSON.parse(params.payload);
+					// console.log("parsedPayload:::", parsedPayload); // debugging
+					return (bindingId === parsedPayload.bindingId);
+				} catch {
+						return false;
+				}
+			}
+		);
+
+		return Promises.timeoutPromise (
+			promise,
+			() => {
+				unsubscribePromise.then(unsubscribe => unsubscribe());
+			}
+		)
+	}
+
 
 	/**
 	 * 도메인을 활성화/비활성화합니다.
