@@ -53,5 +53,21 @@ const unwrappedPromise = () => {
 	unwrapped.controller = abortController;
 	return unwrapped;
 }
-
+/*
+const unwrappedPromise = () => {
+const unwrapped = Promise.withResolvers(); // ECMA 2024
+const abortController = new AbortController();
+const signal = abortController.signal;
+var handler = () => {
+unwrapped.reject(new Error("Aborted:::"));
+};
+signal.addEventListener("abort", handler, {once: true});
+unwrapped.promise = unwrapped.promise.finally(result => {
+signal.removeEventListener("abort", handler);
+return result;
+});
+unwrapped.controller = abortController;
+return unwrapped;
+}
+*/
 export { DEFAULT_TIMEOUT_MS, timeoutPromise, unwrappedPromise };
