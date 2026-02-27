@@ -3,7 +3,7 @@
  * @class
  * @property {Function} _runnable - 실행할 함수
 */
-class Job {
+export class Job {
 	constructor(runnable) {
 		if (typeof runnable !== "function") {
 			throw new Error("Runnable must be a function");
@@ -21,7 +21,7 @@ class Job {
  * @class
  * @property {Array<Job>} _queue - 작업 대기열
 */
-class JobQueue {
+export class JobQueue {
 
 	static get THRESHOLD () {
 		return 1000;
@@ -79,6 +79,3 @@ class JobQueue {
 		}
 	}
 }
-
-
-export { Job, JobQueue };
