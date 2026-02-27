@@ -5,7 +5,7 @@ import {Job, JobQueue} from "./job-queue.js";
  * @class
  * @abstract
 */
-class EventHandler {
+export class EventHandler {
 
 	/**
 	 * 이벤트 발생 시 처리할 수 있도록 이벤트 핸들러를 등록합니다.
@@ -31,7 +31,7 @@ class EventHandler {
  * @class
  * @extends EventHandler
 */
-class DefaultEventHandler extends EventHandler {
+export class DefaultEventHandler extends EventHandler {
 
 	/**
 	 * 생성자
@@ -96,5 +96,3 @@ class DefaultEventHandler extends EventHandler {
 		await this._jobQueue.enqueue(new Job(runnable));
 	}
 }
-
-export { EventHandler, DefaultEventHandler };
