@@ -1,5 +1,5 @@
 
-const DEFAULT_TIMEOUT_MS = 5000;
+export const DEFAULT_TIMEOUT_MS = 5000;
 
 /**
  * Promise에 타임아웃 기능을 추가합니다.
@@ -8,7 +8,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
  * @param {number} [timeoutMs=5000] - 타임아웃 시간
  * @returns {Promise}
  */
-const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
+export const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS) => {
 	var timer;
 	var stack = new Error(`timeout:::${timeoutMs}`);
 	var timeoutPromise = new Promise((timeout_res, timeout_rej) => {
@@ -33,7 +33,7 @@ const timeoutPromise = (promise, timeoutCallback, timeoutMs = DEFAULT_TIMEOUT_MS
  * 외부에서 resolve/reject를 제어할 수 있는 "Unwrapped" Promise 객체를 생성합니다.
  * @returns {Object} { promise, resolve, reject, controller }
  */
-const unwrappedPromise = () => {
+export const unwrappedPromise = () => {
 	const unwrapped = {};
 	const abortController = new AbortController();
 	const signal = abortController.signal;
@@ -70,4 +70,3 @@ unwrapped.controller = abortController;
 return unwrapped;
 }
 */
-export { DEFAULT_TIMEOUT_MS, timeoutPromise, unwrappedPromise };
