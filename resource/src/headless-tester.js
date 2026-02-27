@@ -4,7 +4,7 @@ import * as Promises from "./promises.js";
 /**
 * Headless 브라우저 테스팅을 위한 래퍼 클래스
 */
-class HeadlessTester {
+export class HeadlessTester {
 	/**
 	 * @constructor
 	 * @param {CdpSession} cdpSession
@@ -211,5 +211,3 @@ class HeadlessTester {
 		return this._session.enableDomain(domainName, bool);
 	}
 }
-
-export {HeadlessTester};
