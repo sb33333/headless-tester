@@ -1,6 +1,6 @@
 "use strict";
 
-import { HeadlessTester } from "../src/headless-tester.js";
+import { HeadlessTester } from "../module.js";
 
 var tester;
 var wsUrl = "write your cdp websocket url here";
@@ -13,6 +13,12 @@ var wsUrl = "write your cdp websocket url here";
 	var evalResult = await tester.evaluate(`document.title`);
 	console.log("evalResult:::", evalResult);
 
+	try {
+		await tester.navigate("/not/exist/page");
+	} catch {
 
-	await tester.navigate("/not/exist/page");
+	}
+
+	// await tester.closeBrowser();
+
 })();
