@@ -40,10 +40,12 @@ export default class HeadlessTester {
 	 * @param {string} hostName - 대상 호스트
 	 * @returns {Promise<HeadlessTester>}
 	*/
-	static async create (cdpWebSocketUrl, hostName) {
+	static create (cdpWebSocketUrl, hostName) {
 		var session = new CdpSession(cdpWebSocketUrl);
-		await session.open();
-		return new HeadlessTester(session, hostName);
+		var sessionOpenPromise = session.open();
+		return Promises.timeoutPromise(sessionOpenPromise, () => session._ws.close()).then(s => {
+			return new HeadlessTester(s, hostName, "https");
+		});
 	}
 
 	/**

@@ -50,6 +50,7 @@ export default class CdpSession {
 		this._sequence = 0;
 		this._requests = new Map();
 		this._eventHandler = EventHandlers.DefaultEventHandler.create();
+		this._unsubscribes = [];
 	}
 
 	/**
@@ -97,6 +98,10 @@ export default class CdpSession {
 			}
 
 			that._ws.onclose = () => {
+				that._unsubscribes
+					.forEach(promise => promise.then(unsubscribe => {
+						unsubscribe();
+					}));
 				console.info("websocket session closed");
 			}
 			that._ws.onopen = () => {
@@ -134,7 +139,7 @@ export default class CdpSession {
 						}
 					`
 				});
-				that._eventHandler.subscribe(
+				var unsubscribe1 = that._eventHandler.subscribe(
 					"Page.frameNavigated",
 					() => {
 						// Page.frameNavigated 될 때 binding 실행
@@ -142,7 +147,7 @@ export default class CdpSession {
 						return true;
 					}
 				);
-				that._eventHandler.subscribe(
+				var unsubscribe2 =that._eventHandler.subscribe(
 					"Page.javascriptDialogOpening",
 					(params) => {
 						// javascript 대화상자가 열렸을 때 실행
@@ -153,6 +158,7 @@ export default class CdpSession {
 						return true;
 					}
 				);
+				that._unsubscribes.push(unsubscribe1, unsubscribe2);
 				session_resolve(that);
 			}
 			that._ws.onmessage = async msg => {
@@ -171,6 +177,11 @@ export default class CdpSession {
 	close () {
 		this._ws.close();
 	}
+
+	closeBrowser () {
+		return this._session.sendMessage("Browser.close", {});
+	}
+
 	_checkSessionStatus() {
 		if (!this.isOpen) throw new Error("websocket is not opened");
 	}
